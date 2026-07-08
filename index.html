@@ -330,6 +330,27 @@ body {
 .random-modal-btn-close { background: transparent; color: var(--text-muted); border: 1px solid var(--border); flex: 0 0 auto; width: 44px; }
 .random-modal-btn-close:hover { color: var(--text); }
 [data-theme="dark"] .random-modal-btn-reveal { background: var(--primary-light); color: var(--bg); }
+
+/* 加载更多 */
+.load-more-wrap { display: flex; justify-content: center; padding: 22px 16px 8px; }
+.load-more-btn { font-size: 14px; padding: 11px 26px; box-shadow: var(--shadow); }
+
+/* 顶部宣传 banner */
+.promo-banner { position: relative; display: flex; gap: 14px; align-items: flex-start; margin: 14px 16px 0; padding: 14px 16px; border-radius: var(--radius); background: linear-gradient(120deg, #fff4e6, #ffe9f0); border: 1px solid #ffd8b0; color: #5b3a1a; box-shadow: var(--shadow); }
+[data-theme="dark"] .promo-banner { background: linear-gradient(120deg, #3a2c1e, #3a2433); border-color: #5c4326; color: #f0d9c0; }
+.promo-close { position: absolute; top: 8px; right: 10px; width: 24px; height: 24px; border: none; background: rgba(0,0,0,0.06); color: inherit; border-radius: 50%; font-size: 16px; line-height: 1; cursor: pointer; }
+.promo-close:hover { background: rgba(0,0,0,0.12); }
+.promo-icon { font-size: 30px; line-height: 1.2; }
+.promo-body { flex: 1; }
+.promo-title { font-weight: 800; font-size: 14px; margin-bottom: 4px; }
+.promo-text { font-size: 13px; line-height: 1.7; }
+.promo-text b { color: #d9480f; }
+[data-theme="dark"] .promo-text b { color: #ffb37a; }
+.promo-xianyu { background: #ff5a1f; color: #fff; padding: 1px 8px; border-radius: 6px; font-weight: 800; }
+.promo-actions { margin-top: 8px; }
+.promo-btn { border: none; background: linear-gradient(120deg, #ff7a18, #ff5a1f); color: #fff; font-weight: 700; font-size: 13px; padding: 8px 16px; border-radius: 999px; cursor: pointer; box-shadow: 0 4px 12px rgba(255,90,31,0.3); }
+.promo-btn:active { transform: translateY(1px); }
+
 </style>
 </head>
 <body>
@@ -393,7 +414,23 @@ body {
     </div>
   </div>
 </div>
+<div class="promo-banner" id="promoBanner">
+  <button class="promo-close" id="promoClose" title="收起">×</button>
+  <div class="promo-icon">🚒</div>
+  <div class="promo-body">
+    <div class="promo-title">📚 辅警备考资料 · 作者自营</div>
+    <div class="promo-text">
+      主业：<b>消防员体能培训</b> / 大学生军事夏令营 / 辅警体测指导。本刷题系统提供 <b>离线完整版</b> 与 <b>私人定制</b>（按你报考岗位定制题库）。闲鱼搜 <b class="promo-xianyu">rcj9527</b> 联系作者 👇
+    </div>
+    <div class="promo-actions">
+      <button class="promo-btn" id="promoXianyu">🔗 复制闲鱼账号 rcj9527</button>
+    </div>
+  </div>
+</div>
 <main class="main" id="questionsList"></main>
+<div class="load-more-wrap" id="loadMoreWrap" style="display:none;">
+  <button class="action-btn load-more-btn" id="loadMoreBtn">⬇️ 加载更多题目</button>
+</div>
 <button class="back-to-top" id="backToTop" title="回到顶部">↑</button>
 <footer class="footer"><p>© 闲鱼app🔍RCJ9527 · 涵盖笔试、体测、面试等助你一战成警</p></footer>
 
@@ -2135,13 +2172,35 @@ function formatAnswer(text, keyword) {
   return html.replace(/\n/g, "<br>");
 }
 
-function render() {
-  var container = document.getElementById("questionsList");
+var PAGE_SIZE_I = 40;
+var flatItemsI = [];
+var renderedCountI = 0;
+var currentOpenYear = null;
+var yearCountsI = {};
+var totalShownI = 0;
+var currentStatusDB = {};
+
+function cardHtmlI(q, search, statusDB) {
+  var typeInfo = TYPE_MAP[q.type] || { cls: "zhfx", label: q.type };
+  var tagBadges = "";
+  if (q.tags && q.tags.length > 0) {
+    q.tags.forEach(function(t) {
+      var ti = TAG_MAP[t];
+      if (ti) { tagBadges += "<span class=\"tag-badge tag-" + ti.cls + "\"><span class=\"tag-icon\">" + ti.icon + "</span> " + t + "</span>"; }
+    });
+  }
+  var titleHtml = highlight(q.title, search);
+  var answerHtml = formatAnswer(q.answer, search);
+  var currentStatus = statusDB[q._idx] || 'not-mastered';
+  var actNotMaster = (currentStatus === 'not-mastered') ? 'active' : '';
+  var actMaster = (currentStatus === 'mastered') ? 'active' : '';
+  return "<div class=\"card\" id=\"q" + q._idx + "\"><div class=\"card-header\"><div class=\"card-left\"><div class=\"card-badges\"><span class=\"badge badge-type-" + typeInfo.cls + "\"><span class=\"tag-icon\">📝</span> " + typeInfo.label + "</span><span class=\"badge badge-year\">" + q.year + "</span>" + (q.session ? "<span class=\"badge badge-session\">" + escapeHtml(q.session) + "</span>" : "") + tagBadges + "</div><div class=\"card-title\">" + titleHtml + "</div></div><span class=\"arrow\">▼</span></div><div class=\"card-body\"><div class=\"card-body-inner\"><div class=\"hint-bar\"><span>💡 请先独立思考，展开查看解析。</span><div class=\"study-actions\"><button class=\"study-btn not-mastered " + actNotMaster + "\" onclick=\"changeTrack(event, " + q._idx + ", 'not-mastered')\">❌ 仍需练习</button><button class=\"study-btn mastered " + actMaster + "\" onclick=\"changeTrack(event, " + q._idx + ", 'mastered')\">🟢 已掌握</button></div></div><div class=\"answer-section\"><div class=\"answer-title\">📝 参考答案</div><div class=\"answer-content\">" + answerHtml + "</div></div></div></div></div>";
+}
+
+function computeFilteredI() {
   var search = document.getElementById("searchInput").value.trim().toLowerCase();
   var byYear = {};
-  var totalShown = 0;
   var statusDB = StorageCtrl.get();
-
   DATA.forEach(function(q) {
     var yearMatch = filterYear === "all" || q.year === filterYear;
     var typeMatch = filterType === "all" || q.type === filterType;
@@ -2151,42 +2210,77 @@ function render() {
     var searchMatch = !search || searchText.indexOf(search) !== -1;
     if (yearMatch && typeMatch && tagMatch && markMatch && searchMatch) {
       if (!byYear[q.year]) byYear[q.year] = [];
-      byYear[q.year].push(q); totalShown++;
+      byYear[q.year].push(q);
     }
   });
-
   var years = Object.keys(byYear).sort(function(a, b) { return b - a; });
-  var parts = [];
-  if (years.length === 0) {
-    parts.push("<div class=\"no-result\">🔍 未找到匹配的题目，请调整筛选条件</div>");
-  } else {
-    years.forEach(function(year) {
-      var list = byYear[year];
-      parts.push("<div class=\"year-section\"><h2 class=\"year-title\">" + year + "年 <span class=\"year-count\">" + list.length + "道</span></h2>");
-      list.forEach(function(q) {
-        var typeInfo = TYPE_MAP[q.type] || { cls: "zhfx", label: q.type };
-        var tagBadges = "";
-        if (q.tags && q.tags.length > 0) {
-          q.tags.forEach(function(t) {
-            var ti = TAG_MAP[t];
-            if (ti) { tagBadges += "<span class=\"tag-badge tag-" + ti.cls + "\"><span class=\"tag-icon\">" + ti.icon + "</span> " + t + "</span>"; }
-          });
-        }
-        var titleHtml = highlight(q.title, search);
-        var answerHtml = formatAnswer(q.answer, search);
-        
-        var currentStatus = statusDB[q._idx] || 'not-mastered';
-        var actNotMaster = (currentStatus === 'not-mastered') ? 'active' : '';
-        var actMaster = (currentStatus === 'mastered') ? 'active' : '';
+  var flat = [];
+  years.forEach(function(year) { byYear[year].forEach(function(q) { flat.push(q); }); });
+  return { flat: flat, statusDB: statusDB };
+}
 
-        parts.push("<div class=\"card\" id=\"q" + q._idx + "\"><div class=\"card-header\"><div class=\"card-left\"><div class=\"card-badges\"><span class=\"badge badge-type-" + typeInfo.cls + "\"><span class=\"tag-icon\">📝</span> " + typeInfo.label + "</span><span class=\"badge badge-year\">" + q.year + "</span>" + (q.session ? "<span class=\"badge badge-session\">" + escapeHtml(q.session) + "</span>" : "") + tagBadges + "</div><div class=\"card-title\">" + titleHtml + "</div></div><span class=\"arrow\">▼</span></div><div class=\"card-body\"><div class=\"card-body-inner\"><div class=\"hint-bar\"><span>💡 请先独立思考，展开查看解析。</span><div class=\"study-actions\"><button class=\"study-btn not-mastered " + actNotMaster + "\" onclick=\"changeTrack(event, " + q._idx + ", 'not-mastered')\">❌ 仍需练习</button><button class=\"study-btn mastered " + actMaster + "\" onclick=\"changeTrack(event, " + q._idx + ", 'mastered')\">🟢 已掌握</button></div></div><div class=\"answer-section\"><div class=\"answer-title\">📝 参考答案</div><div class=\"answer-content\">" + answerHtml + "</div></div></div></div></div>");
-      });
-      parts.push("</div>");
-    });
-  }
-  container.innerHTML = parts.join("");
+function updateCountI() {
   var countEl = document.getElementById("resultCount");
-  if (countEl) countEl.innerHTML = "显示 <strong>" + totalShown + "</strong>/" + DATA.length + " 道";
+  if (!countEl) return;
+  var tail = totalShownI < DATA.length ? "（筛选后 " + totalShownI + "）" : "";
+  countEl.innerHTML = "显示 <strong>" + renderedCountI + "</strong>/" + DATA.length + " 道" + tail;
+}
+
+function showLoadMoreI() { var w = document.getElementById("loadMoreWrap"); if (w) w.style.display = "block"; }
+function hideLoadMoreI() { var w = document.getElementById("loadMoreWrap"); if (w) w.style.display = "none"; }
+
+function appendBatchI() {
+  var container = document.getElementById("questionsList");
+  var search = document.getElementById("searchInput").value.trim().toLowerCase();
+  if (renderedCountI === 0) {
+    currentOpenYear = null;
+    if (flatItemsI.length === 0) {
+      container.innerHTML = "<div class=\"no-result\">🔍 未找到匹配的题目，请调整筛选条件</div>";
+      hideLoadMoreI();
+      updateCountI();
+      return;
+    }
+    container.innerHTML = "";
+  }
+  var end = Math.min(renderedCountI + PAGE_SIZE_I, flatItemsI.length);
+  var html = "";
+  for (var i = renderedCountI; i < end; i++) {
+    var q = flatItemsI[i];
+    if (q.year !== currentOpenYear) {
+      if (currentOpenYear !== null) html += "</div>";
+      currentOpenYear = q.year;
+      html += "<div class=\"year-section\"><h2 class=\"year-title\">" + q.year + "年 <span class=\"year-count\">" + (yearCountsI[q.year] || 0) + "道</span></h2>";
+    }
+    html += cardHtmlI(q, search, currentStatusDB);
+  }
+  container.insertAdjacentHTML("beforeend", html);
+  renderedCountI = end;
+  if (renderedCountI >= flatItemsI.length) {
+    if (currentOpenYear !== null) {
+      container.insertAdjacentHTML("beforeend", "</div>");
+      currentOpenYear = null;
+    }
+    hideLoadMoreI();
+  } else {
+    showLoadMoreI();
+  }
+  updateCountI();
+}
+
+function loadAllI() {
+  while (renderedCountI < flatItemsI.length) appendBatchI();
+}
+
+function render() {
+  var res = computeFilteredI();
+  flatItemsI = res.flat;
+  currentStatusDB = res.statusDB;
+  totalShownI = flatItemsI.length;
+  renderedCountI = 0;
+  currentOpenYear = null;
+  yearCountsI = {};
+  flatItemsI.forEach(function(q) { yearCountsI[q.year] = (yearCountsI[q.year] || 0) + 1; });
+  appendBatchI();
 }
 
 function changeTrack(e, idx, status) {
@@ -2217,9 +2311,34 @@ document.querySelectorAll(".btn[data-filter]").forEach(function(btn) {
   });
 });
 document.getElementById("searchInput").addEventListener("input", render);
+document.getElementById("loadMoreBtn").addEventListener("click", appendBatchI);
 document.getElementById("expandAll").addEventListener("click", function() {
+  loadAllI();
   document.querySelectorAll(".card").forEach(function(c) { c.classList.add("open"); });
 });
+
+// 顶部宣传 banner
+(function () {
+  var banner = document.getElementById("promoBanner");
+  var KEY = "fj_promo_closed";
+  try { if (localStorage.getItem(KEY) === "1") banner.style.display = "none"; } catch (e) {}
+  document.getElementById("promoClose").addEventListener("click", function () {
+    banner.style.display = "none";
+    try { localStorage.setItem(KEY, "1"); } catch (e) {}
+  });
+  var xb = document.getElementById("promoXianyu");
+  if (xb) xb.addEventListener("click", function () {
+    var t = "rcj9527";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(function () {
+        xb.textContent = "✅ 已复制：rcj9527";
+        setTimeout(function () { xb.textContent = "🔗 复制闲鱼账号 rcj9527"; }, 2000);
+      });
+    } else {
+      xb.textContent = "闲鱼账号：rcj9527";
+    }
+  });
+})();
 document.getElementById("collapseAll").addEventListener("click", function() {
   document.querySelectorAll(".card").forEach(function(c) { c.classList.remove("open"); });
 });
