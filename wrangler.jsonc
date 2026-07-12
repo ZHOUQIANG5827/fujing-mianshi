@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "fujing-mianshi-v2", // 这里改名，随便后缀 v2/test/new 都行
+  "name": "rcj-fj", // 辅警门户项目名（与 GitHub 仓库改名 rcj-fj 对齐）
   "compatibility_date": "2026-07-08",
   "observability": {
     "enabled": true
