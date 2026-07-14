@@ -227,7 +227,7 @@ body {
 /* 按板块刷：先作答后核对 */
 .opt-row.study-opt { cursor: pointer; transition: all .15s; }
 .opt-row.study-opt:hover { border-color: var(--primary-light); }
-.opt-row.study-opt.selected { border-color: var(--primary-light); background: var(--primary-bg); }
+.opt-row.study-opt.selected { border-color: var(--primary); background: rgba(37,99,235,.10); box-shadow: 0 0 0 2px rgba(37,99,235,.25); font-weight: 600; }
 .opt-row.study-opt.ok { border-color: #16a34a; background: rgba(22,163,74,.12); }
 .opt-row.study-opt.bad { border-color: #dc2626; background: rgba(220,38,38,.1); }
 .opt-row.study-opt.right { border-color: #16a34a; box-shadow: inset 0 0 0 2px rgba(22,163,74,.45); }
@@ -977,7 +977,7 @@ function cardHtml(q) {
     var ansHtml = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
     if (q.explanation) ansHtml += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, currentSearch) + "</div>";
     bodyInner = (optsHtml ? '<div style="margin:12px 0">' + optsHtml + "</div>" : "")
-      + '<div class="study-check"><button class="study-check-btn" data-idx="' + q._idx + '" onclick="revealStudyAnswer(' + q._idx + ')">✅ 提交答案</button></div>'
+      + '<div class="study-check"><button type="button" class="study-check-btn" data-idx="' + q._idx + '" onclick="revealStudyAnswer(' + q._idx + ')">✅ 提交答案</button></div>'
       + '<div class="study-answer" id="ans' + q._idx + '" style="display:none">' + answerSection(ansHtml) + "</div>";
   }
   var statusDB = StorageCtrl.get();
@@ -1098,7 +1098,8 @@ function studyQuestionByIdx(idx) {
   return null;
 }
 function revealStudyAnswer(idx) {
- try {
+  console.log("[提交] revealStudyAnswer called, idx=", idx);
+  try {
   var q = studyQuestionByIdx(idx); if (!q) return;
   var card = document.getElementById("q" + idx);
   var selLetters = [];
@@ -1146,6 +1147,7 @@ document.getElementById("questionsList").addEventListener("click", function (e) 
     var idx = parseInt(opt.dataset.idx, 10);
     var q = studyQuestionByIdx(idx);
     if (!q) return;
+    console.log("[选项点击] idx=", idx, "type=", q.type, "letter=", opt.dataset.letter);
     if (q.type === "multi" || q.type === "multiple") {
       // 多选：先多选，点「提交答案」再判
       opt.classList.toggle("selected");
@@ -1157,7 +1159,7 @@ document.getElementById("questionsList").addEventListener("click", function (e) 
     return;
   }
   var btn = e.target.closest(".study-check-btn");
-  if (btn) revealStudyAnswer(parseInt(btn.dataset.idx, 10));
+  if (btn) { console.log("[事件委托-提交] btn idx=", btn.dataset.idx); revealStudyAnswer(parseInt(btn.dataset.idx, 10)); }
 });
 document.getElementById("filterRows").addEventListener("click", function (e) {
   var btn = e.target.closest(".btn");
