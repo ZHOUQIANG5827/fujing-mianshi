@@ -977,7 +977,7 @@ function cardHtml(q) {
     var ansHtml = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
     if (q.explanation) ansHtml += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, currentSearch) + "</div>";
     bodyInner = (optsHtml ? '<div style="margin:12px 0">' + optsHtml + "</div>" : "")
-      + '<div class="study-check"><button class="study-check-btn" data-idx="' + q._idx + '">✅ 提交答案</button></div>'
+      + '<div class="study-check"><button class="study-check-btn" data-idx="' + q._idx + '" onclick="revealStudyAnswer(' + q._idx + ')">✅ 提交答案</button></div>'
       + '<div class="study-answer" id="ans' + q._idx + '" style="display:none">' + answerSection(ansHtml) + "</div>";
   }
   var statusDB = StorageCtrl.get();
