@@ -856,7 +856,7 @@ function formatAnswer(text, keyword) {
 function activeDimensions() {
   return MODE === "interview"
     ? [{ key: "year", label: "年份" }, { key: "type", label: "题型" }, { key: "tag", label: "标签" }]
-    : [{ key: "batch", label: "批次" }, { key: "type", label: "题型" }];
+    : [{ key: "batch", label: "批次" }];
 }
 function deriveValues(dim) {
   var set = {}, data = dataset();
