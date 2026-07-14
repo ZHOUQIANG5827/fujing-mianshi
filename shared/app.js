@@ -1203,11 +1203,15 @@ document.getElementById("siteSubtitle").textContent = CONFIG.subtitle + (CONFIG.
   if (!regions || !regions.length) return;
   var row = document.getElementById("regionsRow");
   if (!row) return;
-  // 深圳（真题来源）用实心标记，其余城市用通用标记
+  var withData = CONFIG.regionsWithData || [];
   var h = '<span class="region-chip"><span class="chip-icon">📍</span>适用地区</span>';
   for (var i = 0; i < regions.length; i++) {
-    var isSource = (regions[i] === '深圳');
-    h += '<span class="region-chip"><span class="chip-icon">' + (isSource ? '✅' : '🏙️') + '</span>' + escapeHtml(regions[i]) + '</span>';
+    var has = withData.indexOf(regions[i]) !== -1;
+    if (has) {
+      h += '<span class="region-chip"><span class="chip-icon">✅</span>' + escapeHtml(regions[i]) + '</span>';
+    } else {
+      h += '<span class="region-chip muted">' + escapeHtml(regions[i]) + '</span>';
+    }
   }
   row.innerHTML = h;
 })();
