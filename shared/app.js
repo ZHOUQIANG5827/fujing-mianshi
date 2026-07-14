@@ -497,9 +497,9 @@ document.getElementById("collapseAll").addEventListener("click", function () { d
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(t).then(function () {
         xb.textContent = "✅ 已复制：" + t;
-        setTimeout(function () { xb.textContent = "📋 复制闲鱼号：" + t; }, 2000);
+        setTimeout(function () { xb.textContent = "📋 复制作者ID：" + t; }, 2000);
       });
-    } else { xb.textContent = "闲鱼号：" + t; }
+    } else { xb.textContent = "作者ID：" + t; }
   });
 })();
 
@@ -1231,7 +1231,7 @@ if (!_mReward) { _hide('rewardBtn'); _hide('rewardToastOverlay'); }
 // 闲鱼文案（仅开启时才有意义）
 document.getElementById("promoTitle").textContent = CONFIG.promoTitle;
 document.getElementById("promoText").innerHTML = CONFIG.promoText;
-document.getElementById("promoXianyu").textContent = "📋 复制闲鱼号：" + CONFIG.xianyuCode;
+document.getElementById("promoXianyu").textContent = "📋 复制作者ID：" + CONFIG.xianyuCode;
 document.getElementById("xtCode").textContent = CONFIG.xianyuCode;
 
 // 打赏文案与赞赏码（仅 reward 开启时有意义）
