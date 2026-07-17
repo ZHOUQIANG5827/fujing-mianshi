@@ -3154,7 +3154,7 @@ function updateStats() {
   var data = dataset();
   var dimKey = MODE === "interview" ? "year" : "batch";
   var dimSet = {}, typeSet = {};
-  data.forEach(function (q) { if (q[dimKey]) dimSet[q[dimKey]] = 1; if (q.type) typeSet[normType(q.type)] = 1; });
+  data.forEach(function (q) { if (q[dimKey]) dimSet[q[dimKey]] = 1; if (q.type) typeSet[MODE === "interview" ? q.type : normType(q.type)] = 1; });
   document.getElementById("statNum0").textContent = data.length;
   document.getElementById("statLabel0").textContent = "真题数";
   document.getElementById("statNum1").textContent = Object.keys(dimSet).length;
